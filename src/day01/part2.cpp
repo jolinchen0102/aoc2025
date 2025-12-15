@@ -6,19 +6,28 @@
 #include <ostream>
 #include <sstream>
 #include <stdio.h>
+#include <string_view>
 #include <type_traits>
 
 using std::getline;
 using std::ifstream;
 using std::string;
 using iss = std::istringstream;
-using std::max;
 using std::println;
+using std::string_view;
 
-#define START_POS 50
-#define SIGN(num) ((num) < 0)
+constexpr int START_POS = 50;
+constexpr int DIAL_SIZE = 100;
 
-int dial(int pos, int num, int *resp) {
+/**
+ * @brief
+ *
+ * @param pos
+ * @param num
+ * @param resp
+ * @return size_t in range [1, 100]
+ */
+size_t dial(size_t pos, long num, int *resp) {
     /*
     if num > 0: compare num & 100 - pos
     else: compare num and pos
@@ -28,13 +37,13 @@ int dial(int pos, int num, int *resp) {
     3. _ -> 0/100   : round + 1
     4. _ -> _       : round (cross?)
     */
-    assert_msg(pos >= 0 && pos < 100, "pos=%d", pos);
+    assert_msg(pos >= 0 && pos < 100, "pos=%zu", pos);
 
     size_t round = abs(num / 100);
     (*resp) += round;
 
-    int step = num % 100;
-    size_t new_pos = (pos + step + 100) % 100;
+    long step = num % 100;
+    size_t new_pos = static_cast<size_t>((pos + step + 100) % 100);
     println("old_pos={}, new_pos={}, num={}, round={}, step={}", pos, new_pos,
             num, round, step);
     if (step == 0 || pos == 0) {
@@ -57,39 +66,43 @@ int dial(int pos, int num, int *resp) {
     return new_pos;
 }
 
-int solve(const char *filename) {
-    assert(filename != NULL);
-    std::ifstream input_file(filename);
+int solve(string_view filename) {
+    assert(filename.data() != NULL);
+    std::ifstream input_file(filename.data());
     if (!input_file.is_open()) {
         println("Couldn't open input file {}", filename);
     }
 
-    int pos = START_POS;
+    size_t pos = START_POS;
     int res = 0;
     string cmd;
     while (getline(input_file, cmd)) {
         if (cmd.empty())
             break;
         char dir = cmd[0];
-        int num = std::atoi(cmd.substr(1).c_str());
+        long num = std::stol(cmd.substr(1).c_str());
         assert(num >= 0 && "Got negtive num?");
-        switch (dir) {
-        case 'L':
+        if (dir == 'L')
             num = -num;
-            break;
-        case 'R':
-        default:
-            break;
-        }
         pos = dial(pos, num, &res);
     }
     return res;
 }
 
 int main(int argc, char **argv) {
-    assert(argc >= 2 && "Give an input file as argument");
-    char *filename = argv[1];
-    println("Using input file: {}", filename);
-    int res = solve(filename);
-    println("password: {}", res);
+    if (argc < 2) {
+        println(std::cerr, "Usage: {} <input_file>", argv[0]);
+    }
+    try {
+        string_view filename = argv[1];
+        size_t res = solve(filename);
+        println("password: {}", res);
+    } catch (const std::exception &e) {
+        std::println(std::cerr, "An unexpected error occurred: {}", e.what());
+        return 1;
+    } catch (...) {
+        std::println(std::cerr, "An unknown error occurred.");
+        return 1;
+    }
+    return 0;
 }
