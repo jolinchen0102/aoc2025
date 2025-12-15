@@ -4,5 +4,5 @@ UseTab: Never
 BasedOnStyle: LLVM
 DerivePointerAlignment: false
 PointerAlignment: Right
-ColumnLimit: 120
+ColumnLimit: 80
 IncludeBlocks: Preserve
