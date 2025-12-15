@@ -1,0 +1,8 @@
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+BasedOnStyle: LLVM
+DerivePointerAlignment: false
+PointerAlignment: Right
+ColumnLimit: 120
+IncludeBlocks: Preserve
