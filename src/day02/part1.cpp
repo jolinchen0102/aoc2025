@@ -20,8 +20,8 @@ size_t count_invalid(std::string_view first, std::string_view last) {
     3. xx - xx   -> ?
     4. xx - xx+  -> ?
     */
-    size_t len_first = first.size();
-    size_t len_last = last.size();
+    size_t len_first = first.length();
+    size_t len_last = last.length();
     if (len_last < len_first)
         return 0;
     if ((len_first == len_last) && len_first % 2 != 0)
@@ -47,19 +47,19 @@ size_t count_invalid(std::string_view first, std::string_view last) {
     long factor_first = std::pow(10, half_digits_first);
     long first_l = num_first / factor_first;
     long first_r = num_first % factor_first;
-    if (first_l >= first_r) {
-        invalid_sum += RESTORE_NUM_FROM_L(first_l, factor_first);
-        clogf("+%ld", RESTORE_NUM_FROM_L(first_l, factor_first));
-    }
 
     size_t half_digits_last = len_last / 2;
     long factor_last = std::pow(10, half_digits_last);
     long last_l = num_last / factor_last;
     long last_r = num_last % factor_last;
-    // if (last_l <= last_r && (half_digits_last > half_digits_first)) {
-    //     invalid_sum += RESTORE_NUM_FROM_L(last_l, factor_last);
-    //     clogf("+%ld", RESTORE_NUM_FROM_L(last_l, factor_last));
-    // }
+    if (first_l == last_l) {
+        // early return
+        if (first_l >= first_r && first_l <= last_r) {
+            invalid_sum += RESTORE_NUM_FROM_L(first_l, factor_first);
+            clogf("+%ld", RESTORE_NUM_FROM_L(first_l, factor_first));
+        }
+        return invalid_sum;
+    }
     /*
     1. 20 - 21
     2, 20 - 23
@@ -67,19 +67,26 @@ size_t count_invalid(std::string_view first, std::string_view last) {
     4. 20 - 8000
     */
     assert_msg(first_l <= last_l, "first_l=%lu, last_l=%lu", first_l, last_l);
-    while (++first_l <= last_l) {
-        if (first_l == last_l) {
+    long tmp_l = first_l;
+    while (tmp_l <= last_l) {
+        if (tmp_l == first_l) {
+            if (first_l >= first_r) {
+                invalid_sum += RESTORE_NUM_FROM_L(first_l, factor_first);
+                clogf("+%ld", RESTORE_NUM_FROM_L(first_l, factor_first));
+            }
+        } else if (tmp_l == last_l) {
             if (last_l <= last_r) {
                 invalid_sum += RESTORE_NUM_FROM_L(last_l, factor_last);
                 clogf("+%ld", RESTORE_NUM_FROM_L(last_l, factor_last));
             }
         } else {
-            size_t num_digits = get_num_digits(first_l);
+            size_t num_digits = get_num_digits(tmp_l);
             size_t factor = std::pow(10, num_digits);
-            invalid_sum += RESTORE_NUM_FROM_L(first_l, factor);
+            invalid_sum += RESTORE_NUM_FROM_L(tmp_l, factor);
             println("num_digits={}, +{}", num_digits,
-                    RESTORE_NUM_FROM_L(first_l, num_digits));
+                    RESTORE_NUM_FROM_L(tmp_l, factor));
         }
+        tmp_l++;
     }
     println("invalid sum = {}", invalid_sum);
     return invalid_sum;
