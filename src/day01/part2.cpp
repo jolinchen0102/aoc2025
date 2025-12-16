@@ -15,6 +15,7 @@ using std::string;
 using iss = std::istringstream;
 using std::println;
 using std::string_view;
+#define LOG false
 
 constexpr int START_POS = 50;
 constexpr int DIAL_SIZE = 100;

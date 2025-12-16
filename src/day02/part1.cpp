@@ -10,6 +10,7 @@
 using std::println;
 
 #define RESTORE_NUM_FROM_L(l, factor) (((l) * (factor)) + (l))
+#define LOG false
 
 size_t count_invalid(std::string_view first, std::string_view last) {
     assert(first.size() > 0);
