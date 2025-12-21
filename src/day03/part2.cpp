@@ -6,9 +6,9 @@
 #include <string_view>
 #include <utility>
 #include <vector>
-#define LOG false
 
-#define NUM_CODES 12
+constexpr bool LOG = false;
+constexpr size_t NUM_CODES = 12;
 
 static void zero_arr_from_idx(char *arr, size_t arr_len, size_t idx) {
     if (idx == arr_len)
