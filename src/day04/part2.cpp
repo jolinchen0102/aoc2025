@@ -1,5 +1,6 @@
 #include "logging.h"
 #include "utils.h"
+#include <array>
 #include <cassert>
 #include <cstddef>
 #include <fstream>
@@ -10,8 +11,14 @@
 constexpr bool LOG = true;
 
 using graph = std::vector<std::vector<int>>;
+enum class Cell : int {
+    Empty = -1,
+    Removed = -2,
+};
 
-constexpr bool cell_empty(int elem) { return elem < 0; }
+constexpr std::array<std::pair<int, int>, 8> NEIGHBORS = {
+    {{-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1}}};
+
 constexpr void decr_elem(int &elem) {
     if (elem <= 0)
         return;
@@ -24,36 +31,7 @@ constexpr bool can_remove_elem(int elem) {
     return false;
 }
 
-static inline void _alter_top_right(graph &g, size_t row, size_t col,
-                                    int delta) {
-    if (cell_empty(g[row - 1][col + 1]))
-        return;
-    g[row - 1][col + 1] += delta;
-    g[row][col] += 1;
-}
-
-static inline void _alter_top_left(graph &g, size_t row, size_t col,
-                                   int delta) {
-    if (cell_empty(g[row - 1][col - 1]))
-        return;
-    g[row - 1][col - 1] += delta;
-    g[row][col] += 1;
-}
-
-static inline void _alter_up(graph &g, size_t row, size_t col, int delta) {
-    if (cell_empty(g[row - 1][col]))
-        return;
-    g[row - 1][col] += delta;
-    g[row][col] += 1;
-}
-
-static inline void _alter_left(graph &g, size_t row, size_t col, int delta) {
-    if (cell_empty(g[row][col - 1])) {
-        return;
-    }
-    g[row][col - 1] += delta;
-    g[row][col] += 1;
-}
+static inline bool is_roll(int cell) { return cell >= 0; }
 
 static void print_graph(graph &g) {
     size_t row_cnt = g.size();
@@ -76,56 +54,34 @@ static void print_graph(graph &g) {
 static void alter_neighbors(graph &g, size_t row, size_t col) {
     assert(row >= 0 && col >= 0);
     g[row][col] = 0;
-    if (row == 0) {
-        // Modify left only
-        if (col - 1 >= 0) {
-            _alter_left(g, row, col, 1);
+    for (auto [dr, dc] : NEIGHBORS) {
+        auto nr = static_cast<int>(row) + dr;
+        auto nc = static_cast<int>(col) + dc;
+        if (nr < 0 || nc < 0)
+            continue;
+        if (static_cast<size_t>(nr) >= g.size())
+            continue;
+        if (static_cast<size_t>(nc) >= g[nr].size())
+            continue;
+
+        if (is_roll(g[nr][nc])) {
+            g[nr][nc]++;
+            g[row][col]++;
         }
-    } else {
-        size_t max_col_ex = g[row - 1].size();
-        _alter_up(g, row, col, 1);
-        if (col == 0) {
-            assert(col + 1 < max_col_ex);
-            _alter_top_right(g, row, col, 1);
-            return;
-        } else if (col < max_col_ex - 1) {
-            assert(col + 1 < max_col_ex);
-            _alter_top_right(g, row, col, 1);
-        }
-        assert(col - 1 >= 0);
-        _alter_top_left(g, row, col, 1);
-        _alter_left(g, row, col, 1);
     }
 }
 
 static void decrement_neighbors(graph &g, size_t row, size_t col) {
-    size_t row_cnt = g.size();
-    size_t col_cnt = g[0].size();
-    if (row > 0) {
-        decr_elem(g[row - 1][col]);
-        if (col > 0) {
-            decr_elem(g[row - 1][col - 1]);
-        }
-        if (col < col_cnt - 1) {
-            decr_elem(g[row - 1][col + 1]);
-        }
+    int row_cnt = g.size();
+    int col_cnt = g[0].size();
+    for (auto [dr, dc] : NEIGHBORS) {
+        auto nr = static_cast<int>(row) + dr;
+        auto nc = static_cast<int>(col) + dc;
+        if (nr < 0 || nr >= row_cnt || nc < 0 || nc >= col_cnt)
+            continue;
+        decr_elem(g[nr][nc]);
     }
-    if (row < row_cnt - 1) {
-        decr_elem(g[row + 1][col]);
-        if (col > 0) {
-            decr_elem(g[row + 1][col - 1]);
-        }
-        if (col < col_cnt - 1) {
-            decr_elem(g[row + 1][col + 1]);
-        }
-    }
-    if (col > 0) {
-        decr_elem(g[row][col - 1]);
-    }
-    if (col < col_cnt - 1) {
-        decr_elem(g[row][col + 1]);
-    }
-    print_graph(g);
+    // print_graph(g);
 }
 
 static size_t remove_elements(graph &g) {
@@ -137,9 +93,8 @@ static size_t remove_elements(graph &g) {
         for (size_t col = 0; col < col_cnt; col++) {
             auto elem = g[row][col];
             if (can_remove_elem(elem)) {
-                g[row][col] = -2;
+                g[row][col] = static_cast<int>(Cell::Removed);
                 decrement_neighbors(g, row, col);
-                // print_graph(g);
                 removed_cnt++;
             }
         }
