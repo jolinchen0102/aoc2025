@@ -85,7 +85,7 @@ static ll solve(std::string_view filename) {
         if (line.empty())
             break;
         range range = parse_range(line);
-        ranges.emplace_back(range);
+        ranges.emplace_back(std::move(range));
     }
     print_ranges(ranges);
     // sort by ascending first, descending second
