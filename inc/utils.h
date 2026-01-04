@@ -2,6 +2,7 @@
 #define _UTILS_H
 
 #include <cstddef>
+#include <fstream>
 #include <vector>
 
 constexpr int char2int_shift = 48;
@@ -11,5 +12,7 @@ size_t get_num_digits(long num);
 std::vector<long> get_factors(long num);
 bool is_prime(long num);
 bool all_digits_are_the_same(long num);
+int get_num_rows(std::string_view file);
+int get_num_cols(std::string_view file);
 
 #endif /* _UTILS_H */

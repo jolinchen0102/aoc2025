@@ -1,5 +1,7 @@
 #include "utils.h"
 #include "logging.h"
+#include <cstddef>
+#include <sstream>
 #include <vector>
 
 size_t get_num_digits(long num) {
@@ -42,4 +44,38 @@ bool is_prime(long num) {
             return false;
     }
     return true;
+}
+
+int get_num_rows(std::string_view filename) {
+    assert(filename.data() != NULL);
+    std::ifstream file{filename.data()};
+    if (!file.is_open()) {
+        println("Couldn't open input file {}", filename);
+        return -1;
+    }
+    size_t cnt = 0;
+    std::string line;
+    while (getline(file, line)) {
+        cnt++;
+    }
+    return cnt;
+}
+
+int get_num_cols(std::string_view filename) {
+    assert(filename.data() != NULL);
+    std::ifstream file{filename.data()};
+    if (!file.is_open()) {
+        println("Couldn't open input file {}", filename);
+        return -1;
+    }
+    int cnt = 0;
+    std::string line;
+    if (!getline(file, line))
+        return -1;
+    std::istringstream iss{line};
+    std::string col;
+    while (iss >> col) {
+        cnt++;
+    }
+    return cnt;
 }
