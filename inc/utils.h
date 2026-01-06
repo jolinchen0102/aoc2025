@@ -1,8 +1,12 @@
 #ifndef _UTILS_H
 #define _UTILS_H
 
+#include <charconv>
 #include <cstddef>
 #include <fstream>
+#include <ranges>
+#include <string>
+#include <string_view>
 #include <vector>
 
 constexpr int char2int_shift = 48;
@@ -14,6 +18,16 @@ bool is_prime(long num);
 bool all_digits_are_the_same(long num);
 int get_num_rows(std::string_view file);
 int get_num_cols(std::string_view file);
+
+template <typename T> T split_by_delim(std::string_view line, char delim) {
+    T res{};
+    size_t idx = 0;
+    for (auto part : line | std::views::split(delim)) {
+        std::string_view sv(part.begin(), part.end());
+        std::from_chars(sv.data(), sv.data() + sv.size(), res[idx++]);
+    }
+    return res;
+}
 
 // T must be int compatible
 template <typename T> class UnionFindBySize {
