@@ -3,62 +3,47 @@
 #include <algorithm>
 #include <array>
 #include <cassert>
+#include <charconv>
 #include <cmath>
 #include <cstddef>
 #include <fstream>
 #include <functional>
 #include <iostream>
+#include <print>
+#include <queue>
+#include <ranges>
 #include <sstream>
 #include <string>
 #include <vector>
 
 constexpr bool LOG = true;
 
-// max heap with vectro: keep top k smallest {dist, pos}
-// vector: store pairs
-// connect pos in heap
+// max heap with vectro: keep top k smallest {dist, Pos}
+// vector: store positions
+// connect Pos in heap
 
 constexpr size_t num_coords = 3;
 constexpr size_t topk = 3;
-using pos = std::array<ll, num_coords>;
-struct Link;
-using heap = std::vector<Link>;
-using pairs = std::vector<pos>;
-
+using Pos = std::array<ll, num_coords>;
+using Positions = std::vector<Pos>;
 struct Link {
     double dist;
-    // index into the pairs vector, each represent a pos
+    // index into the positions vector, each represent a Pos
     size_t idx_a;
     size_t idx_b;
-};
-// min heap
-static inline auto link_comp = [](const Link &a, const Link &b) {
-    return a.dist > b.dist;
-};
 
-static pos split(const std::string &line) {
-    std::stringstream ss(line);
-    std::string token;
-    pos nums;
-    for (size_t i = 0; i < num_coords; i++) {
-        assert(getline(ss, token, ','));
-        nums[i] = std::stoll(token);
-    }
-    return nums;
-}
+    // min heap, reversed
+    auto operator<=>(const Link &other) const { return other.dist <=> dist; }
+};
+using MinHeap = std::priority_queue<Link>;
 
-static double get_dist(const pos &pos_a, const pos &pos_b) {
+static double get_dist(const Pos &pos_a, const Pos &pos_b) {
     ll dist_sqr = 0;
     for (size_t i = 0; i < num_coords; i++) {
         dist_sqr += (pos_a[i] - pos_b[i]) * (pos_a[i] - pos_b[i]);
     }
     assert(dist_sqr > 0);
-    return std::sqrt(dist_sqr);
-}
-
-static void insert_to_heap(heap &heap, Link &l) {
-    heap.emplace_back(l);
-    std::push_heap(heap.begin(), heap.end(), link_comp);
+    return std::sqrt(static_cast<double>(dist_sqr));
 }
 
 static ll solve(std::string_view filename, size_t num_conn) {
@@ -70,37 +55,34 @@ static ll solve(std::string_view filename, size_t num_conn) {
     }
     ll res = 1;
     std::string line;
-    pairs pairs; // store all positions
-    heap smallestk;
+    Positions positions; // store all positions
+    MinHeap smallestk;
     size_t new_idx = 0;
-    while (getline(input_file, line)) {
-        if (line.empty())
-            break;
-        pos new_pos = split(line);
-        auto cur_size = pairs.size();
+    while (getline(input_file, line) && !line.empty()) {
+        Pos new_pos = split_by_delim<Pos>(line, ',');
+        auto cur_size = positions.size();
+        new_idx = cur_size;
         for (size_t i = 0; i < cur_size; i++) {
-            auto pos = pairs[i];
-            auto dist = get_dist(pos, new_pos);
-            Link l{dist, new_idx, i};
-            insert_to_heap(smallestk, l);
+            auto dist = get_dist(positions[i], new_pos);
+            smallestk.push({dist, new_idx, i});
         }
-        pairs.emplace_back(new_pos);
-        new_idx++;
+        positions.emplace_back(new_pos);
     }
     // construct disjoint set
-    auto num_pos = pairs.size();
-    auto disjoint_set = UnionFindBySize<size_t>(num_pos);
-    while (smallestk.size()) {
-        std::pop_heap(smallestk.begin(), smallestk.end(), link_comp);
-        auto [dist, a, b] = smallestk.back();
-        smallestk.pop_back();
+    auto num_pos = positions.size();
+    UnionFindBySize disjoint_set(num_pos);
+    while (!smallestk.empty()) {
+        auto [dist, a, b] = smallestk.top();
+        smallestk.pop();
+        if (disjoint_set.is_connected(a, b))
+            continue;
         disjoint_set.unionBySize(a, b);
-        if (disjoint_set.getMaxSize() == num_conn) {
-            return pairs[a][0] * pairs[b][0];
+        if (disjoint_set.get_max_size() == num_conn) {
+            return positions[a][0] * positions[b][0];
         }
     }
-    assert_msg(false, "shouldn't reach");
-    return res;
+    std::println(std::cerr, "Failed");
+    return -1;
 }
 
 int main(int argc, char **argv) {

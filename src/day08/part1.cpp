@@ -85,7 +85,7 @@ static ll solve(std::string_view filename, size_t num_conn) {
         disjoint_set.unionBySize(a, b);
     }
 
-    auto sizes = disjoint_set.getSize();
+    auto sizes = disjoint_set.get_size_vec();
     std::ranges::partial_sort(sizes, sizes.begin() + topk, std::greater{});
     std::sort(sizes.begin(), sizes.end(), std::greater<size_t>());
     for (size_t i = 0; i < topk; i++) {
